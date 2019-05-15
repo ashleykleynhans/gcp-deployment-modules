@@ -24,7 +24,7 @@ class Build(DeploymentBase):
         modules.sort()
 
         if not (len(modules)):
-            raise Exception("No modules found")
+            self.exit("No modules found")
 
         for module in modules:
             matches = re.findall("module_(\d+|base)", module)
@@ -43,7 +43,12 @@ class Build(DeploymentBase):
             tag = tag.strip()
 
             if not tag:
-                raise Exception("There are no git tags, create a git tag in order to build the project.")
+                tag = "v1"
+                cmd = f"git tag {tag}"
+                exit_code = os.system(cmd)
+
+                if exit_code:
+                    self.exit("Unable to create a git tag, check whether a git repo has been created")
 
             # Create the temporary build directory
             os.mkdir("build")

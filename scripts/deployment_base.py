@@ -53,15 +53,9 @@ class DeploymentBase(object):
             self.smtp_server.starttls()
             self.smtp_server.login(self.email_address, self.email_password)
         except smtplib.SMTPAuthenticationError as e:
-            msg = f"SMTP Authentication failed for {self.email_address} while logging into smtp.gmail.com"
-            self.logger.error(msg, exc_info=True)
-            print(msg)
-            exit(1)
+            self.exit(f"SMTP Authentication failed for {self.email_address} while logging into smtp.gmail.com")
         except Exception as e:
-            msg = f"Unable to Log in to SMTP server (smtp.gmail.com) with credentials for {self.email_address}"
-            self.logger.error(msg, exc_info=True)
-            print(msg)
-            exit(1)
+            self.exit(f"Unable to Log in to SMTP server (smtp.gmail.com) with credentials for {self.email_address}")
 
     def get_changed_modules(self):
         """Get the list of changed modules from git"""
@@ -173,7 +167,6 @@ class DeploymentBase(object):
 
         return new_tag
 
-
     def tag_gcr_image(self, gcr_image, module, tag):
         """Tag the docker image for GCP Container Registry"""
 
@@ -181,7 +174,6 @@ class DeploymentBase(object):
         cmd = f"docker tag {module}:{tag} {gcr_image}"
 
         return os.system(cmd)
-
 
     def push_gcr_image(self, gcr_image):
         """Push the image to the Container Registry"""
@@ -191,11 +183,11 @@ class DeploymentBase(object):
 
         return os.system(cmd)
 
-
     def create_yaml(self, module_number, gcr_image):
         """Create the YAML file to inject the environment variables to Kubernetes"""
 
-        self.logger.info(f"Creating build/build.yaml file which describes the Deployment information for module-{module_number}")
+        msg = f"Creating build/build.yaml file which describes the Deployment information for module-{module_number}"
+        self.logger.info(msg)
 
         f = open("build/build.yaml", "w+")
         f.write("apiVersion: apps/v1\n")
@@ -219,7 +211,6 @@ class DeploymentBase(object):
         f.write("        - name: MODULE_NUMBER\n")
         f.write(f'          value: "{module_number}"\n')
         f.close()
-
 
     def deploy_to_kubernetes(self, module_number, gcr_image):
         """Set environment variables and deploy container to Kubernetes"""
@@ -246,7 +237,6 @@ class DeploymentBase(object):
 
         return os.system(cmd)
 
-
     def send_notification(self, results):
         """Send notification email to administrator"""
 
@@ -268,3 +258,9 @@ class DeploymentBase(object):
             msg = f"An error occurred attempting to send the notification email to {self.admin}"
             self.logger.error(msg, exc_info=True)
             print(msg)
+
+    def exit(self, msg):
+        self.logger.critical(msg)
+        print(msg)
+        exit(1)
+
